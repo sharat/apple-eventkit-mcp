@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test (macOS 26 Apple Silicon arm64)
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Report toolchain
+        run: swift --version && xcodebuild -version
+
+      - name: Verify skill directory synchronization
+        run: diff -ru skills/apple-reminders .agents/skills/apple-reminders
+
+      - name: Build release binary
+        run: swift build -c release
+
+      - name: Run unit and contract tests
+        run: swift test
+
+      - name: Assert MCP protocol conformance
+        run: scripts/protocol-conformance.sh

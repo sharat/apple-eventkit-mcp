@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]*'
+
+jobs:
+  release:
+    name: Build & Publish Release (macOS 26 Apple Silicon arm64)
+    runs-on: macos-26
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Report toolchain
+        run: swift --version && xcodebuild -version
+
+      - name: Run test suite before packaging
+        run: swift test
+
+      - name: Build Apple Silicon arm64 Binary
+        run: |
+          swift build -c release
+          scripts/protocol-conformance.sh
+          mkdir -p dist
+          cp .build/release/apple-eventkit-mcp dist/
+          cp LICENSE dist/
+          cp README.md dist/
+          cp -r skills dist/skills
+
+      - name: Package Release Archive
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          cd dist
+          tar -czvf "../apple-eventkit-mcp-${VERSION}-macos-arm64.tar.gz" apple-eventkit-mcp LICENSE README.md skills
+          cd ..
+          shasum -a 256 apple-eventkit-mcp-*-macos-arm64.tar.gz > SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apple-eventkit-mcp-*-macos-arm64.tar.gz
+            SHA256SUMS.txt
+          generate_release_notes: true
+          draft: false
+          prerelease: false
