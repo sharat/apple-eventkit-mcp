@@ -17,7 +17,15 @@ test:
 conformance: build
 	scripts/protocol-conformance.sh
 
-check: test conformance
+# Local-only: .agents/ is gitignored, so a CI checkout never has it to compare.
+skills-sync:
+	@if [ -d .agents/skills/apple-reminders ]; then \
+		diff -ru skills/apple-reminders .agents/skills/apple-reminders && echo "skills/ and .agents/ in sync"; \
+	else \
+		echo "skipping: .agents/skills/apple-reminders not present"; \
+	fi
+
+check: test conformance skills-sync
 
 install: build
 	install -d $(DESTDIR)$(BINDIR)

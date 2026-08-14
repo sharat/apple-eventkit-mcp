@@ -126,10 +126,14 @@ prompt_user() {
     read -r -p "$prompt_text" ans || ans="$default_val"
     echo "${ans:-$default_val}"
   elif [ -e /dev/tty ] && [ -r /dev/tty ]; then
+    # `curl … | bash` from a terminal: stdin is the pipe, but the controlling
+    # terminal is still available to prompt on.
     read -r -p "$prompt_text" ans < /dev/tty || ans="$default_val"
     echo "${ans:-$default_val}"
   else
-    echo "$default_val"
+    # No way to ask (CI, Docker, cron). Decline rather than silently consent to
+    # installing skill files and rewriting MCP client configs; pass --yes to opt in.
+    echo "N"
   fi
 }
 

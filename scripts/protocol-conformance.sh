@@ -7,6 +7,12 @@
 # cleanly. Response *semantics* are owned by MCPServerProtocolTests — do not
 # duplicate those assertions here.
 #
+# IMPORTANT: every request below must be answerable without EventKit. Any
+# tools/call reaches ensureAuthorized() -> requestFullAccessToReminders(), which
+# blocks forever on a headless CI runner because there is no TCC session to
+# answer the permission prompt. initialize, tools/list and parse errors are all
+# EventKit-free; keep it that way.
+#
 # Usage: scripts/protocol-conformance.sh [path-to-binary]
 #        (defaults to .build/release/apple-eventkit-mcp)
 
@@ -59,10 +65,10 @@ assert err["error"]["code"] == -32700, err
 print("  ✓ stdio framing, structured results, and null-id parse error")
 PY
 
-# Out-of-range numerics must not trap the process (a Swift trap exits non-zero,
-# which `set -e` turns into a failure here).
-printf '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_reminders","arguments":{"limit":1e30}}}\n' \
-  | "$BIN" > /dev/null 2>&1
-echo "  ✓ out-of-range numerics do not trap"
+# Out-of-range numeric arguments (e.g. limit: 1e30) are deliberately NOT checked
+# here: exercising them requires a tools/call, which blocks on EventKit
+# authorization in CI. That regression is covered without EventKit by
+# AnyCodableTests.intMaxBoundaryDoesNotCrash — a Swift trap would abort the whole
+# `swift test` process, so the unit test genuinely catches it.
 
 echo "MCP protocol conformance OK"

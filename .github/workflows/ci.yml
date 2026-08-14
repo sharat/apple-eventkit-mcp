@@ -21,9 +21,6 @@ jobs:
       - name: Report toolchain
         run: swift --version && xcodebuild -version
 
-      - name: Verify skill directory synchronization
-        run: diff -ru skills/apple-reminders .agents/skills/apple-reminders
-
       - name: Build release binary
         run: swift build -c release
 
